@@ -1,5 +1,7 @@
 # Add To Context Menu v1.2 🛠️
 
+![Zrzut ekranu aplikacji](screenshot.png)
+
 Add To Context Menu to proste narzędzie dla systemu Windows, które pozwala dodać pliki `.exe` oraz skrypty Python (`.py`) do menu kontekstowego pulpitu.
 
 Wszystkie dodane skróty są umieszczone w dedykowanym podmenu **Programy**.
@@ -53,12 +55,6 @@ Jeśli używasz wirtualnego środowiska:
 1. Kliknij **🔍 Zarządzaj aplikacjami / Wyświetl dodane**.
 2. Wybierz wpis do usunięcia.
 3. Kliknij **Usuń zaznaczone**.
-
-## Zrzut ekranu
-
-Przykładowy zrzut ekranu:
-
-![Zrzut ekranu aplikacji](screenshot.png)
 
 ## Autor
 - Sebastian Januchowski

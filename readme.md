@@ -1,5 +1,7 @@
 # Add To Context Menu v1.2 🛠️
 
+![Application screenshot](screenshot.png)
+
 Add To Context Menu is a lightweight Windows utility that lets you add `.exe` files and Python scripts (`.py`) directly to the desktop right-click menu.
 
 All added shortcuts appear in a dedicated submenu called **Programs** (or **Programy**, if Polish is selected).
@@ -53,12 +55,6 @@ If you are using the included virtual environment:
 1. Click **🔍 Manage Apps / Show Added**.
 2. Select the entry you want to remove.
 3. Click **Delete Selected**.
-
-## Screenshot
-
-Example screenshot:
-
-![Application screenshot](screenshot.png)
 
 ## Author
 - Sebastian Januchowski
