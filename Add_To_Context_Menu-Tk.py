@@ -1,9 +1,9 @@
-
 import os
 import shutil
 import struct
 import sys
 import winreg
+import webbrowser
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -105,14 +105,15 @@ LANGUAGES = {
     }
 }
 
-# Current language (default: English)
 current_lang = 'en'
-
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 APP_ICON_CANDIDATES = [
     os.path.join(SCRIPT_DIR, 'app_icon.ico'),
     os.path.join(SCRIPT_DIR, 'icon.ico'),
 ]
+MENU_ICON_SOURCE = "app_icon.ico"
+ICON_IMAGE = None
+
 
 def get_app_icon_path():
     for candidate in APP_ICON_CANDIDATES:
@@ -121,11 +122,6 @@ def get_app_icon_path():
     return ''
 
 
-# Nazwa pliku z ikoną podmenu
-MENU_ICON_SOURCE = "app_icon.ico"
-
-ICON_IMAGE = None
-
 def load_header_icon(size=(48, 48)):
     global ICON_IMAGE
     icon_path = get_app_icon_path()
@@ -133,40 +129,12 @@ def load_header_icon(size=(48, 48)):
         return None
     try:
         image = Image.open(icon_path)
-        image = image.resize(size, Image.LANCZOS)
+        image = image.resize(size, Image.Resampling.LANCZOS)
         ICON_IMAGE = ImageTk.PhotoImage(image)
         return ICON_IMAGE
     except Exception:
         return None
 
-def convert_png_to_ico_fallback(png_path, ico_path):
-    try:
-        from PIL import Image
-        img = Image.open(png_path)
-        img.save(ico_path, format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (256, 256)])
-        return True
-    except ImportError:
-        try:
-            ico_header = struct.pack('<HHH', 0, 1, 1)
-            icon_dir_entry = struct.pack('<BBBBHHII', 32, 32, 0, 0, 1, 32, 4160, 22)
-            bitmap_info_header = struct.pack('<IiiHHIIiiii', 40, 32, 64, 1, 32, 0, 0, 0, 0, 0, 0)
-            
-            pixel_data = b''
-            for y in range(32):
-                for x in range(32):
-                    if 6 <= x <= 25 and 6 <= y <= 25:
-                        pixel_data += struct.pack('<BBBB', 204, 112, 38, 255)
-                    else:
-                        pixel_data += struct.pack('<BBBB', 0, 0, 0, 0)
-                        
-            with open(ico_path, 'wb') as f:
-                f.write(ico_header)
-                f.write(icon_dir_entry)
-                f.write(bitmap_info_header)
-                f.write(pixel_data)
-            return True
-        except Exception:
-            return False
 
 def generate_default_app_ico(target_path):
     try:
@@ -191,6 +159,7 @@ def generate_default_app_ico(target_path):
     except Exception:
         return False
 
+
 def build_command_string(app_path, current_executable=None, is_frozen=False, python_mode='console'):
     absolute_path = os.path.abspath(app_path)
     if absolute_path.lower().endswith('.py'):
@@ -213,7 +182,6 @@ def build_command_string(app_path, current_executable=None, is_frozen=False, pyt
             for executable in candidates:
                 if os.path.exists(executable):
                     return f'"{executable}" "{absolute_path}"'
-            return f'"{current_executable or sys.executable}" "{absolute_path}"'
         return f'"{current_executable or sys.executable}" "{absolute_path}"'
     return f'"{absolute_path}"'
 
@@ -267,7 +235,6 @@ def add_to_context_menu(label, app_path, icon_path="", python_mode='console'):
         
         winreg.CloseKey(cmd_key)
         winreg.CloseKey(app_key)
-            
         return True
     except PermissionError:
         messagebox.showerror(LANGUAGES[current_lang]['error_generic'], LANGUAGES[current_lang]['error_perm'])
@@ -275,6 +242,7 @@ def add_to_context_menu(label, app_path, icon_path="", python_mode='console'):
     except Exception as e:
         messagebox.showerror(LANGUAGES[current_lang]['error_generic'], f"{LANGUAGES[current_lang]['error_generic']} {e}")
         return False
+
 
 def remove_from_context_menu(label):
     try:
@@ -302,11 +270,11 @@ def remove_from_context_menu(label):
                 winreg.DeleteKey(root_key, base_menu_path)
             except FileNotFoundError:
                 pass
-                
         return True
     except Exception as e:
         messagebox.showerror(LANGUAGES[current_lang]['error_generic'], f"{LANGUAGES[current_lang]['error_generic']} {e}")
         return False
+
 
 def get_installed_menus():
     menus = []
@@ -340,7 +308,6 @@ class ManageWindow(tk.Toplevel):
         self.title(LANGUAGES[current_lang]['manage_window_title'])
         self.geometry("500x380")
         self.resizable(False, False)
-        self.minsize(420, 320)
         self.grab_set()
         
         icon_path = get_app_icon_path()
@@ -423,60 +390,56 @@ class AboutWindow(tk.Toplevel):
         main_frame = ttk.Frame(self, padding="20 20 20 20")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Title
-        lbl_title = ttk.Label(main_frame, text="Add To Context Menu", font=("Segoe UI", 14, "bold"))
-        lbl_title.grid(row=0, column=0, columnspan=2, pady=(0, 5), sticky='ew')
+        self.lbl_title = ttk.Label(main_frame, text="Add To Context Menu", font=("Segoe UI", 14, "bold"))
+        self.lbl_title.grid(row=0, column=0, columnspan=2, pady=(0, 5), sticky='ew')
         
-        lbl_version = ttk.Label(main_frame, text="Version 1.2", font=("Segoe UI", 9))
-        lbl_version.grid(row=1, column=0, columnspan=2, pady=(0, 15), sticky='ew')
+        self.lbl_version = ttk.Label(main_frame, text="Version 1.2", font=("Segoe UI", 9))
+        self.lbl_version.grid(row=1, column=0, columnspan=2, pady=(0, 15), sticky='ew')
 
-        # Description
-        desc_lines = LANGUAGES[current_lang]['about_desc'].split('\n')
-        for line in desc_lines:
-            ttk.Label(main_frame, text=line, font=("Segoe UI", 9)).grid(row=2+desc_lines.index(line), column=0, columnspan=2, sticky='w', pady=2)
+        self.lbl_desc = ttk.Label(main_frame, text=LANGUAGES[current_lang]['about_desc'], font=("Segoe UI", 9), justify=tk.LEFT)
+        self.lbl_desc.grid(row=2, column=0, columnspan=2, sticky='w', pady=2)
         
-        ttk.Label(main_frame, text=LANGUAGES[current_lang]['about_created'], font=("Segoe UI", 9)).grid(row=2+len(desc_lines), column=0, columnspan=2, sticky='w', pady=(10, 15))
+        self.lbl_created = ttk.Label(main_frame, text=LANGUAGES[current_lang]['about_created'], font=("Segoe UI", 9))
+        self.lbl_created.grid(row=3, column=0, columnspan=2, sticky='w', pady=(10, 15))
         
-        # Separator
-        ttk.Separator(main_frame, orient='horizontal').grid(row=3+len(desc_lines), column=0, columnspan=2, sticky='ew', pady=(0, 15))
+        ttk.Separator(main_frame, orient='horizontal').grid(row=4, column=0, columnspan=2, sticky='ew', pady=(0, 15))
 
-        # Author info
-        row_start = 4 + len(desc_lines)
+        self.lbl_author_tag = ttk.Label(main_frame, text=LANGUAGES[current_lang]['author_label'], font=("Segoe UI", 9, "bold"))
+        self.lbl_author_tag.grid(row=5, column=0, sticky='w', padx=(0, 10))
+        self.lbl_author_name = ttk.Label(main_frame, text=LANGUAGES[current_lang]['author_name'], font=("Segoe UI", 9))
+        self.lbl_author_name.grid(row=5, column=1, sticky='w')
         
-        ttk.Label(main_frame, text=LANGUAGES[current_lang]['author_label'], font=("Segoe UI", 9, "bold")).grid(row=row_start, column=0, sticky='w', padx=(0, 10))
-        ttk.Label(main_frame, text=LANGUAGES[current_lang]['author_name'], font=("Segoe UI", 9)).grid(row=row_start, column=1, sticky='w')
+        self.lbl_mail_tag = ttk.Label(main_frame, text=LANGUAGES[current_lang]['mail_label'], font=("Segoe UI", 9, "bold"))
+        self.lbl_mail_tag.grid(row=6, column=0, sticky='w', padx=(0, 10), pady=2)
+        self.lbl_mail = ttk.Label(main_frame, text=LANGUAGES[current_lang]['mail_address'], font=("Segoe UI", 9), foreground='blue', cursor='hand2')
+        self.lbl_mail.grid(row=6, column=1, sticky='w', pady=2)
+        self.lbl_mail.bind("<Button-1>", lambda e: self.open_mail())
         
-        ttk.Label(main_frame, text=LANGUAGES[current_lang]['mail_label'], font=("Segoe UI", 9, "bold")).grid(row=row_start+1, column=0, sticky='w', padx=(0, 10), pady=2)
-        lbl_mail = ttk.Label(main_frame, text=LANGUAGES[current_lang]['mail_address'], font=("Segoe UI", 9), foreground='blue', cursor='hand2')
-        lbl_mail.grid(row=row_start+1, column=1, sticky='w', pady=2)
-        lbl_mail.bind("<Button-1>", lambda e: self.open_mail())
+        self.lbl_github_tag = ttk.Label(main_frame, text=LANGUAGES[current_lang]['github_label'], font=("Segoe UI", 9, "bold"))
+        self.lbl_github_tag.grid(row=7, column=0, sticky='w', padx=(0, 10), pady=2)
+        self.lbl_github = ttk.Label(main_frame, text=LANGUAGES[current_lang]['github_url'], font=("Segoe UI", 9), foreground='blue', cursor='hand2')
+        self.lbl_github.grid(row=7, column=1, sticky='w', pady=2)
+        self.lbl_github.bind("<Button-1>", lambda e: self.open_github())
         
-        ttk.Label(main_frame, text=LANGUAGES[current_lang]['github_label'], font=("Segoe UI", 9, "bold")).grid(row=row_start+2, column=0, sticky='w', padx=(0, 10), pady=2)
-        lbl_github = ttk.Label(main_frame, text=LANGUAGES[current_lang]['github_url'], font=("Segoe UI", 9), foreground='blue', cursor='hand2')
-        lbl_github.grid(row=row_start+2, column=1, sticky='w', pady=2)
-        lbl_github.bind("<Button-1>", lambda e: self.open_github())
-        
-        # Separator
-        ttk.Separator(main_frame, orient='horizontal').grid(row=row_start+3, column=0, columnspan=2, sticky='ew', pady=15)
+        ttk.Separator(main_frame, orient='horizontal').grid(row=8, column=0, columnspan=2, sticky='ew', pady=15)
 
-        # Close button
-        btn_close = ttk.Button(main_frame, text=LANGUAGES[current_lang]['close'], command=self.destroy)
-        btn_close.grid(row=row_start+4, column=0, columnspan=2)
+        self.btn_close = ttk.Button(main_frame, text=LANGUAGES[current_lang]['close'], command=self.destroy)
+        self.btn_close.grid(row=9, column=0, columnspan=2)
 
     def open_mail(self):
-        import webbrowser
         webbrowser.open(f"mailto:{LANGUAGES[current_lang]['mail_address']}")
 
     def open_github(self):
-        import webbrowser
         webbrowser.open(f"https://github.com/{LANGUAGES[current_lang]['github_url']}")
 
     def update_language(self):
         self.title(LANGUAGES[current_lang]['about_title'])
-        # Refresh all widgets
-        for widget in self.winfo_children():
-            widget.destroy()
-        self.create_widgets()
+        self.lbl_desc.config(text=LANGUAGES[current_lang]['about_desc'])
+        self.lbl_created.config(text=LANGUAGES[current_lang]['about_created'])
+        self.lbl_author_tag.config(text=LANGUAGES[current_lang]['author_label'])
+        self.lbl_mail_tag.config(text=LANGUAGES[current_lang]['mail_label'])
+        self.lbl_github_tag.config(text=LANGUAGES[current_lang]['github_label'])
+        self.btn_close.config(text=LANGUAGES[current_lang]['close'])
 
 
 class AppGui:
@@ -490,36 +453,26 @@ class AppGui:
     def setup_style(self):
         style = ttk.Style()
         style.theme_use('clam')
-
         style.configure('TFrame', background='#f3f4f6')
         style.configure('Card.TFrame', background='#ffffff', borderwidth=1, relief='flat')
         style.configure('Header.TFrame', background='#0f4c81')
         style.configure('Status.TFrame', background='#e7ebf0')
-
         style.configure('TLabel', font=('Segoe UI', 9), background='#f3f4f6', foreground='#333333')
         style.configure('Card.TLabel', font=('Segoe UI', 9), background='#ffffff', foreground='#333333')
         style.configure('Header.TLabel', font=('Segoe UI', 14, 'bold'), background='#0f4c81', foreground='white')
         style.configure('HeaderSub.TLabel', font=('Segoe UI', 9), background='#0f4c81', foreground='#dce7f5')
         style.configure('Status.TLabel', font=('Segoe UI', 8), background='#e7ebf0', foreground='#4a4a4a')
-
         style.configure('TEntry', font=('Segoe UI', 9), fieldbackground='#ffffff', bordercolor='#c8c8c8', background='#ffffff')
         style.configure('TButton', font=('Segoe UI', 9, 'bold'), padding=8)
         style.configure('Primary.TButton', foreground='white', background='#0f4c81')
         style.configure('Secondary.TButton', foreground='#333333', background='#e1e3e6')
-
-        style.map('Primary.TButton',
-                  foreground=[('pressed', 'white'), ('active', 'white')],
-                  background=[('pressed', '#07315a'), ('active', '#0b4d84')])
-        style.map('Secondary.TButton',
-                  foreground=[('pressed', '#333333'), ('active', '#333333')],
-                  background=[('pressed', '#cfd3d8'), ('active', '#d9dde3')])
-
+        style.map('Primary.TButton', foreground=[('pressed', 'white'), ('active', 'white')], background=[('pressed', '#07315a'), ('active', '#0b4d84')])
+        style.map('Secondary.TButton', foreground=[('pressed', '#333333'), ('active', '#333333')], background=[('pressed', '#cfd3d8'), ('active', '#d9dde3')])
         self.root.configure(bg='#f3f4f6')
 
     def create_widgets(self):
         self.root.title(LANGUAGES[current_lang]['window_title'])
         self.root.resizable(False, False)
-        self.root.configure(bg='#f3f4f6')
 
         icon_path = get_app_icon_path()
         if icon_path:
@@ -530,6 +483,7 @@ class AppGui:
 
         header_frame = ttk.Frame(container, style='Header.TFrame')
         header_frame.pack(fill=tk.X, pady=(0, 15), ipady=10)
+        
         icon_image = load_header_icon((48, 48))
         if icon_image:
             ttk.Label(header_frame, image=icon_image, background='#0f4c81').pack(side=tk.LEFT, padx=(15, 10))
@@ -539,8 +493,7 @@ class AppGui:
         status_frame = ttk.Frame(container, relief=tk.SUNKEN, style='Status.TFrame')
         status_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=(15, 0))
 
-        self.status_var = tk.StringVar()
-        self.status_var.set("Ready")
+        self.status_var = tk.StringVar(value="Ready")
         lbl_status = ttk.Label(status_frame, textvariable=self.status_var, anchor=tk.W, style='Status.TLabel')
         lbl_status.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=8, pady=4)
         lbl_author = ttk.Label(status_frame, text="by Sebastian Januchowski", anchor=tk.E, style='Status.TLabel')
@@ -565,49 +518,44 @@ class AppGui:
 
         self.lbl_path = ttk.Label(container, text=LANGUAGES[current_lang]['app_path_label'], style='Card.TLabel', font=("Segoe UI", 9, "bold"))
         self.lbl_path.pack(anchor=tk.W, pady=(0, 5))
+        
         self.frame_path = ttk.Frame(container, style='Card.TFrame')
         self.frame_path.pack(fill=tk.X, pady=(0, 10))
-
         self.entry_path = ttk.Entry(self.frame_path)
         self.entry_path.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
-
         self.btn_browse = ttk.Button(self.frame_path, text=LANGUAGES[current_lang]['browse'], style='Secondary.TButton', command=self.browse_app)
         self.btn_browse.pack(side=tk.RIGHT)
 
         self.lbl_icon = ttk.Label(container, text=LANGUAGES[current_lang]['app_icon_label'], style='Card.TLabel', font=("Segoe UI", 9, "bold"))
         self.lbl_icon.pack(anchor=tk.W, pady=(0, 5))
+        
         self.frame_icon = ttk.Frame(container, style='Card.TFrame')
         self.frame_icon.pack(fill=tk.X, pady=(0, 10))
+        self.entry_icon = ttk.Entry(self.frame_icon)
+        self.entry_icon.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
+        self.btn_browse_icon = ttk.Button(self.frame_icon, text=LANGUAGES[current_lang]['browse'], style='Secondary.TButton', command=self.browse_icon)
+        self.btn_browse_icon.pack(side=tk.RIGHT)
 
         self.lbl_python_mode = ttk.Label(container, text=LANGUAGES[current_lang]['python_launch_mode'], style='Card.TLabel', font=("Segoe UI", 9, "bold"))
         self.lbl_python_mode.pack(anchor=tk.W, pady=(0, 5))
+        
         self.python_mode_var = tk.StringVar(value='console')
         self.frame_python_mode = ttk.Frame(container, style='Card.TFrame')
         self.frame_python_mode.pack(fill=tk.X, pady=(0, 15))
-
         self.console_radio = ttk.Radiobutton(self.frame_python_mode, text=LANGUAGES[current_lang]['python_launch_console'], variable=self.python_mode_var, value='console')
         self.console_radio.pack(side=tk.LEFT, padx=(0, 15))
         self.windowed_radio = ttk.Radiobutton(self.frame_python_mode, text=LANGUAGES[current_lang]['python_launch_windowed'], variable=self.python_mode_var, value='windowed')
         self.windowed_radio.pack(side=tk.LEFT)
-
-        self.entry_icon = ttk.Entry(self.frame_icon)
-        self.entry_icon.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 10))
-
-        self.btn_browse_icon = ttk.Button(self.frame_icon, text=LANGUAGES[current_lang]['browse'], style='Secondary.TButton', command=self.browse_icon)
-        self.btn_browse_icon.pack(side=tk.RIGHT)
 
         self.btn_manage = ttk.Button(container, text=LANGUAGES[current_lang]['manage_apps'], style='Primary.TButton', command=self.open_manage_window)
         self.btn_manage.pack(fill=tk.X, pady=(0, 15))
 
         self.frame_buttons = ttk.Frame(container, style='Card.TFrame')
         self.frame_buttons.pack(fill=tk.X)
-
         self.btn_submit = ttk.Button(self.frame_buttons, text=LANGUAGES[current_lang]['submit'], style='Primary.TButton', command=self.submit)
         self.btn_submit.pack(side=tk.LEFT, padx=(0, 10))
-
         self.btn_cancel = ttk.Button(self.frame_buttons, text=LANGUAGES[current_lang]['cancel'], style='Secondary.TButton', command=self.cancel)
         self.btn_cancel.pack(side=tk.LEFT)
-
         self.btn_exit = ttk.Button(self.frame_buttons, text=LANGUAGES[current_lang]['exit'], style='Secondary.TButton', command=self.root.quit)
         self.btn_exit.pack(side=tk.RIGHT)
 
@@ -640,7 +588,12 @@ class AppGui:
     def browse_app(self):
         file_path = filedialog.askopenfilename(
             title=LANGUAGES[current_lang]['choose_app'],
-            filetypes=[(LANGUAGES[current_lang]['supported_files'], "*.exe;*.py"), (LANGUAGES[current_lang]['python_scripts'], "*.py"), (LANGUAGES[current_lang]['exe_files'], "*.exe"), (LANGUAGES[current_lang]['all_files'], "*.*")]
+            filetypes=[
+                (LANGUAGES[current_lang]['supported_files'], "*.exe;*.py"),
+                (LANGUAGES[current_lang]['python_scripts'], "*.py"),
+                (LANGUAGES[current_lang]['exe_files'], "*.exe"),
+                (LANGUAGES[current_lang]['all_files'], "*.*")
+            ]
         )
         if file_path:
             self.entry_path.delete(0, tk.END)
@@ -666,7 +619,7 @@ class AppGui:
             messagebox.showwarning(LANGUAGES[current_lang]['error_generic'], LANGUAGES[current_lang]['warning_fill'])
             return
 
-        python_mode = self.python_mode_var.get() if self.entry_path.get().strip().lower().endswith('.py') else 'console'
+        python_mode = self.python_mode_var.get() if app_path.lower().endswith('.py') else 'console'
 
         if add_to_context_menu(label, app_path, icon_path, python_mode=python_mode):
             messagebox.showinfo(LANGUAGES[current_lang]['success_add'], f"{LANGUAGES[current_lang]['success_add']} '{label}' {LANGUAGES[current_lang]['submenu_name']}!")

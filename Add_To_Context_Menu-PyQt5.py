@@ -5,13 +5,13 @@ import sys
 import winreg
 import webbrowser
 
-from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QLabel, QLineEdit, QPushButton, QRadioButton, QButtonGroup, 
-    QListWidget, QDialog, QFileDialog, QMessageBox, QFrame, QGridLayout
-)
-from PyQt5.QtGui import QIcon, QFont, QPixmap
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QLabel, QLineEdit, QPushButton, QRadioButton, QButtonGroup,
+    QFileDialog, QMessageBox, QListWidget, QDialog, QFrame
+)
 
 # Słowniki językowe
 LANGUAGES = {
@@ -40,12 +40,9 @@ LANGUAGES = {
         'error_generic': 'An error occurred:',
         'submenu_name': 'Programs',
         'choose_app': 'Choose an application or script',
-        'supported_files': 'Supported files (*.exe *.py)',
-        'python_scripts': 'Python scripts (*.py)',
-        'exe_files': 'Executable files (*.exe)',
-        'all_files': 'All files (*.*)',
+        'supported_files': 'Supported files (*.exe *.py);;Python scripts (*.py);;Executable files (*.exe);;All files (*.*)',
         'choose_icon': 'Choose an icon file',
-        'icon_files': 'Icon files (*.ico)',
+        'icon_files': 'Icon files (*.ico);;All files (*.*)',
         'python_launch_mode': 'Python launch mode:',
         'python_launch_console': 'Run with console',
         'python_launch_windowed': 'Run without console',
@@ -84,12 +81,9 @@ LANGUAGES = {
         'error_generic': 'Wystąpił błąd:',
         'submenu_name': 'Programy',
         'choose_app': 'Wybierz aplikację lub skrypt',
-        'supported_files': 'Obsługiwane pliki (*.exe *.py)',
-        'python_scripts': 'Skrypty Python (*.py)',
-        'exe_files': 'Pliki wykonywalne (*.exe)',
-        'all_files': 'Wszystkie pliki (*.*)',
+        'supported_files': 'Obsługiwane pliki (*.exe *.py);;Skrypty Python (*.py);;Pliki wykonywalne (*.exe);;Wszystkie pliki (*.*)',
         'choose_icon': 'Wybierz plik ikony',
-        'icon_files': 'Pliki ikon (*.ico)',
+        'icon_files': 'Pliki ikon (*.ico);;Wszystkie pliki (*.*)',
         'python_launch_mode': 'Tryb uruchamiania Pythona:',
         'python_launch_console': 'Uruchamiaj z konsolą',
         'python_launch_windowed': 'Uruchamiaj bez konsoli',
@@ -106,78 +100,20 @@ LANGUAGES = {
 }
 
 current_lang = 'en'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+APP_ICON_CANDIDATES = [
+    os.path.join(SCRIPT_DIR, 'app_icon.ico'),
+    os.path.join(SCRIPT_DIR, 'icon.ico'),
+]
 MENU_ICON_SOURCE = "app_icon.ico"
 
-# Style arkusza CSS dla PyQt (Modern Dark/Light Theme)
-QSS_STYLE = """
-    QMainWindow, QDialog {
-        background-color: #f8f9fa;
-    }
-    QLabel {
-        font-family: "Segoe UI";
-        font-size: 12px;
-        color: #333333;
-    }
-    QLineEdit {
-        border: 1px solid #ccd1d9;
-        border-radius: 4px;
-        padding: 6px;
-        background-color: #ffffff;
-        font-family: "Segoe UI";
-    }
-    QLineEdit:focus {
-        border: 1px solid #3b82f6;
-    }
-    QPushButton {
-        background-color: #e4e6eb;
-        color: #333333;
-        border: none;
-        border-radius: 4px;
-        padding: 8px 14px;
-        font-family: "Segoe UI";
-        font-weight: bold;
-        font-size: 12px;
-    }
-    QPushButton:hover {
-        background-color: #d8dadf;
-    }
-    QPushButton:pressed {
-        background-color: #ccd0d5;
-    }
-    QPushButton#primaryBtn {
-        background-color: #0f4c81;
-        color: #ffffff;
-    }
-    QPushButton#primaryBtn:hover {
-        background-color: #0b3c66;
-    }
-    QPushButton#primaryBtn:pressed {
-        background-color: #082d4d;
-    }
-    QRadioButton {
-        font-family: "Segoe UI";
-        font-size: 12px;
-    }
-    QListWidget {
-        border: 1px solid #ccd1d9;
-        border-radius: 4px;
-        background-color: #ffffff;
-        padding: 5px;
-    }
-    QFrame#headerFrame {
-        background-color: #0f4c81;
-        border-radius: 6px;
-    }
-    QLabel#headerTitle {
-        color: #ffffff;
-        font-size: 16px;
-        font-weight: bold;
-    }
-    QLabel#headerSub {
-        color: #dce7f5;
-        font-size: 11px;
-    }
-"""
+
+def get_app_icon_path():
+    for candidate in APP_ICON_CANDIDATES:
+        if os.path.exists(candidate):
+            return candidate
+    return ''
+
 
 def generate_default_app_ico(target_path):
     try:
@@ -202,6 +138,7 @@ def generate_default_app_ico(target_path):
     except Exception:
         return False
 
+
 def build_command_string(app_path, current_executable=None, is_frozen=False, python_mode='console'):
     absolute_path = os.path.abspath(app_path)
     if absolute_path.lower().endswith('.py'):
@@ -224,9 +161,9 @@ def build_command_string(app_path, current_executable=None, is_frozen=False, pyt
             for executable in candidates:
                 if os.path.exists(executable):
                     return f'"{executable}" "{absolute_path}"'
-            return f'"{current_executable or sys.executable}" "{absolute_path}"'
         return f'"{current_executable or sys.executable}" "{absolute_path}"'
     return f'"{absolute_path}"'
+
 
 def add_to_context_menu(label, app_path, icon_path="", python_mode='console'):
     try:
@@ -279,9 +216,10 @@ def add_to_context_menu(label, app_path, icon_path="", python_mode='console'):
         winreg.CloseKey(app_key)
         return True
     except PermissionError:
-        return "perm"
+        return "perm_error"
     except Exception as e:
         return str(e)
+
 
 def remove_from_context_menu(label):
     try:
@@ -310,8 +248,9 @@ def remove_from_context_menu(label):
             except FileNotFoundError:
                 pass
         return True
-    except Exception as e:
-        return str(e)
+    except Exception:
+        return False
+
 
 def get_installed_menus():
     menus = []
@@ -334,44 +273,44 @@ def get_installed_menus():
     return sorted(menus)
 
 
-# --- OKNA DIALOGOWE ---
-
-class ManageDialog(QDialog):
+class ManageWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle(LANGUAGES[current_lang]['manage_window_title'])
-        self.setFixedSize(450, 350)
-        self.setModal(True)
+        self.resize(450, 350)
+        
+        icon_path = get_app_icon_path()
+        if icon_path:
+            self.setWindowIcon(QIcon(icon_path))
 
         layout = QVBoxLayout()
-        
+        self.setLayout(layout)
+
         self.lbl_entries = QLabel()
-        self.lbl_entries.setStyleSheet("font-weight: bold;")
+        self.lbl_entries.setStyleSheet("font-weight: bold; font-size: 11px;")
         layout.addWidget(self.lbl_entries)
 
-        self.list_widget = QListWidget()
-        layout.addWidget(self.list_widget)
+        self.listbox = QListWidget()
+        layout.addWidget(self.listbox)
 
         btn_layout = QHBoxLayout()
         self.btn_delete = QPushButton()
-        self.btn_delete.setObjectName("primaryBtn")
         self.btn_delete.clicked.connect(self.delete_selected)
-        
+        btn_layout.addWidget(self.btn_delete)
+
+        btn_layout.addStretch()
+
         self.btn_close = QPushButton()
         self.btn_close.clicked.connect(self.accept)
-
-        btn_layout.addWidget(self.btn_delete)
-        btn_layout.addStretch()
         btn_layout.addWidget(self.btn_close)
+
         layout.addLayout(btn_layout)
+        self.update_language()
 
-        self.setLayout(layout)
-        self.update_texts()
-
-    def update_texts(self):
+    def update_language(self):
         self.setWindowTitle(LANGUAGES[current_lang]['manage_window_title'])
         self.lbl_entries.setText(f"{LANGUAGES[current_lang]['entries_label']} '{LANGUAGES[current_lang]['submenu_name']}':")
         self.btn_delete.setText(LANGUAGES[current_lang]['delete_selected'])
@@ -379,154 +318,161 @@ class ManageDialog(QDialog):
         self.refresh_list()
 
     def refresh_list(self):
-        self.list_widget.clear()
+        self.listbox.clear()
         menus = get_installed_menus()
-        self.list_widget.addItems(menus)
+        self.listbox.addItems(menus)
 
     def delete_selected(self):
-        selected_items = self.list_widget.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "Warning", LANGUAGES[current_lang]['warning_select'])
+        selected_item = self.listbox.currentItem()
+        if not selected_item:
+            QMessageBox.warning(self, LANGUAGES[current_lang]['error_generic'], LANGUAGES[current_lang]['warning_select'])
             return
-        
-        label = selected_items[0].text()
+
+        selected_label = selected_item.text()
         reply = QMessageBox.question(
             self, 
-            LANGUAGES[current_lang]['about_title'], 
-            f"{LANGUAGES[current_lang]['confirm_delete']} '{label}'?",
+            LANGUAGES[current_lang]['error_generic'], 
+            f"{LANGUAGES[current_lang]['confirm_delete']} '{selected_label}'?",
             QMessageBox.Yes | QMessageBox.No
         )
         
         if reply == QMessageBox.Yes:
-            res = remove_from_context_menu(label)
-            if res is True:
-                QMessageBox.information(self, "Success", f"{LANGUAGES[current_lang]['success_delete']} '{label}'")
+            if remove_from_context_menu(selected_label):
+                QMessageBox.information(self, LANGUAGES[current_lang]['success_add'], f"{LANGUAGES[current_lang]['success_delete']} '{selected_label}'")
                 self.refresh_list()
-            else:
-                QMessageBox.critical(self, "Error", f"{LANGUAGES[current_lang]['error_generic']} {res}")
 
 
-class AboutDialog(QDialog):
+class AboutWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle(LANGUAGES[current_lang]['about_title'])
         self.setFixedSize(380, 280)
-        self.setModal(True)
+        
+        icon_path = get_app_icon_path()
+        if icon_path:
+            self.setWindowIcon(QIcon(icon_path))
 
         layout = QVBoxLayout()
+        self.setLayout(layout)
 
-        lbl_title = QLabel("Add To Context Menu")
-        lbl_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #0f4c81;")
-        layout.addWidget(lbl_title)
+        self.lbl_title = QLabel("Add To Context Menu")
+        self.lbl_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #0f4c81;")
+        layout.addWidget(self.lbl_title)
 
-        lbl_ver = QLabel("Version 1.5 (PyQt5 Edition)")
-        lbl_ver.setStyleSheet("color: #666;")
-        layout.addWidget(lbl_ver)
+        self.lbl_version = QLabel("Version 1.2 (PyQt5)")
+        layout.addWidget(self.lbl_version)
 
         self.lbl_desc = QLabel()
         self.lbl_desc.setWordWrap(True)
         layout.addWidget(self.lbl_desc)
 
-        grid = QGridLayout()
-        self.lbl_auth_title = QLabel()
-        self.lbl_auth_title.setStyleSheet("font-weight: bold;")
-        lbl_auth_val = QLabel(LANGUAGES[current_lang]['author_name'])
-        
-        self.lbl_mail_title = QLabel()
-        self.lbl_mail_title.setStyleSheet("font-weight: bold;")
-        lbl_mail_val = QLabel(f"<a href='mailto:{LANGUAGES[current_lang]['mail_address']}'>{LANGUAGES[current_lang]['mail_address']}</a>")
-        lbl_mail_val.setOpenExternalLinks(True)
+        self.lbl_created = QLabel()
+        layout.addWidget(self.lbl_created)
 
-        self.lbl_git_title = QLabel()
-        self.lbl_git_title.setStyleSheet("font-weight: bold;")
-        lbl_git_val = QLabel(f"<a href='https://github.com/{LANGUAGES[current_lang]['github_url']}'>{LANGUAGES[current_lang]['github_url']}</a>")
-        lbl_git_val.setOpenExternalLinks(True)
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line)
 
-        grid.addWidget(self.lbl_auth_title, 0, 0)
-        grid.addWidget(lbl_auth_val, 0, 1)
-        grid.addWidget(self.lbl_mail_title, 1, 0)
-        grid.addWidget(lbl_mail_val, 1, 1)
-        grid.addWidget(self.lbl_git_title, 2, 0)
-        grid.addWidget(lbl_git_val, 2, 1)
-        layout.addLayout(grid)
+        # Autor info
+        self.lbl_author = QLabel()
+        layout.addWidget(self.lbl_author)
 
-        layout.addStretch()
-        btn_close = QPushButton()
-        btn_close.clicked.connect(self.accept)
-        layout.addWidget(btn_close)
+        # Mail link
+        self.lbl_mail = QLabel()
+        self.lbl_mail.setStyleSheet("color: blue; text-decoration: underline;")
+        self.lbl_mail.setCursor(Qt.PointingHandCursor)
+        self.lbl_mail.mousePressEvent = lambda e: webbrowser.open(f"mailto:{LANGUAGES[current_lang]['mail_address']}")
+        layout.addWidget(self.lbl_mail)
 
-        self.btn_close = btn_close
-        self.setLayout(layout)
-        self.update_texts()
+        # Github link
+        self.lbl_github = QLabel()
+        self.lbl_github.setStyleSheet("color: blue; text-decoration: underline;")
+        self.lbl_github.setCursor(Qt.PointingHandCursor)
+        self.lbl_github.mousePressEvent = lambda e: webbrowser.open(f"https://github.com/{LANGUAGES[current_lang]['github_url']}")
+        layout.addWidget(self.lbl_github)
 
-    def update_texts(self):
+        layout.addSpacing(10)
+        self.btn_close = QPushButton()
+        self.btn_close.clicked.connect(self.accept)
+        layout.addWidget(self.btn_close, alignment=Qt.AlignCenter)
+
+        self.update_language()
+
+    def update_language(self):
         self.setWindowTitle(LANGUAGES[current_lang]['about_title'])
         self.lbl_desc.setText(LANGUAGES[current_lang]['about_desc'])
-        self.lbl_auth_title.setText(LANGUAGES[current_lang]['author_label'])
-        self.lbl_mail_title.setText(LANGUAGES[current_lang]['mail_label'])
-        self.lbl_git_title.setText(LANGUAGES[current_lang]['github_label'])
+        self.lbl_created.setText(LANGUAGES[current_lang]['about_created'])
+        self.lbl_author.setText(f"<b>{LANGUAGES[current_lang]['author_label']}</b> {LANGUAGES[current_lang]['author_name']}")
+        self.lbl_mail.setText(f"<b>{LANGUAGES[current_lang]['mail_label']}</b> {LANGUAGES[current_lang]['mail_address']}")
+        self.lbl_github.setText(f"<b>{LANGUAGES[current_lang]['github_label']}</b> {LANGUAGES[current_lang]['github_url']}")
         self.btn_close.setText(LANGUAGES[current_lang]['close'])
 
 
-# --- GŁÓWNE OKNO APLIKACJI ---
-
-class MainWindow(QMainWindow):
+class AppGui(QMainWindow):
     def __init__(self):
         super().__init__()
         self.init_ui()
+        self.setup_style()
+        self.update_language()
 
     def init_ui(self):
-        self.setFixedSize(560, 560)
+        self.setFixedSize(550, 480)
         
-        # Główny widget
+        icon_path = get_app_icon_path()
+        if icon_path:
+            self.setWindowIcon(QIcon(icon_path))
+
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
         main_layout.setContentsMargins(15, 15, 15, 15)
-        main_layout.setSpacing(10)
 
-        # 1. Nagłówek (Header)
-        header_frame = QFrame()
-        header_frame.setObjectName("headerFrame")
-        header_layout = QVBoxLayout(header_frame)
-        header_layout.setContentsMargins(15, 15, 15, 15)
-
-        self.lbl_header_title = QLabel("Add To Context Menu")
-        self.lbl_header_title.setObjectName("headerTitle")
-        self.lbl_header_sub = QLabel("Add apps or scripts to the Windows desktop context menu")
-        self.lbl_header_sub.setObjectName("headerSub")
-
-        header_layout.addWidget(self.lbl_header_title)
-        header_layout.addWidget(self.lbl_header_sub)
-        main_layout.addWidget(header_frame)
-
-        # Przycisk zmiany języka i o programie
-        top_bar = QHBoxLayout()
-        self.btn_lang = QPushButton("PL")
-        self.btn_lang.setFixedWidth(60)
-        self.btn_lang.clicked.connect(self.switch_language)
+        # Blue Header Area
+        header_widget = QWidget()
+        header_widget.setObjectName("HeaderWidget")
+        header_layout = QHBoxLayout(header_widget)
         
+        self.lbl_header_icon = QLabel()
+        if icon_path:
+            pixmap = QPixmap(icon_path).scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            self.lbl_header_icon.setPixmap(pixmap)
+            header_layout.addWidget(self.lbl_header_icon)
+
+        header_text_layout = QVBoxLayout()
+        lbl_h_title = QLabel("Add To Context Menu")
+        lbl_h_title.setStyleSheet("font-size: 16px; font-weight: bold; color: white;")
+        lbl_h_sub = QLabel("Add apps or scripts to the Windows desktop context menu")
+        lbl_h_sub.setStyleSheet("font-size: 10px; color: #dce7f5;")
+        header_text_layout.addWidget(lbl_h_title)
+        header_text_layout.addWidget(lbl_h_sub)
+        header_layout.addLayout(header_text_layout)
+        header_layout.addStretch()
+        main_layout.addWidget(header_widget)
+
+        # Top bar with About and Lang buttons
+        top_bar_layout = QHBoxLayout()
+        top_bar_layout.addStretch()
+        self.btn_lang = QPushButton("PL")
+        self.btn_lang.setFixedWidth(50)
+        self.btn_lang.clicked.connect(self.switch_language)
         self.btn_about = QPushButton("ℹ️")
         self.btn_about.setFixedWidth(40)
         self.btn_about.clicked.connect(self.show_about)
-        
-        top_bar.addStretch()
-        top_bar.addWidget(self.btn_lang)
-        top_bar.addWidget(self.btn_about)
-        main_layout.addLayout(top_bar)
+        top_bar_layout.addWidget(self.btn_lang)
+        top_bar_layout.addWidget(self.btn_about)
+        main_layout.addLayout(top_bar_layout)
 
-        # 2. Formularz wprowadzania danych
-        # Nazwa aplikacji
-        self.lbl_app = QLabel()
-        self.lbl_app.setStyleSheet("font-weight: bold;")
+        # Form Inputs
+        self.lbl_label = QLabel()
+        self.lbl_label.setStyleSheet("font-weight: bold;")
         self.entry_label = QLineEdit()
-        main_layout.addWidget(self.lbl_app)
+        main_layout.addWidget(self.lbl_label)
         main_layout.addWidget(self.entry_label)
 
-        # Ścieżka aplikacji
         self.lbl_path = QLabel()
         self.lbl_path.setStyleSheet("font-weight: bold;")
         path_layout = QHBoxLayout()
@@ -538,7 +484,6 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.lbl_path)
         main_layout.addLayout(path_layout)
 
-        # Ścieżka ikony
         self.lbl_icon = QLabel()
         self.lbl_icon.setStyleSheet("font-weight: bold;")
         icon_layout = QHBoxLayout()
@@ -550,91 +495,103 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.lbl_icon)
         main_layout.addLayout(icon_layout)
 
-        # Tryb uruchamiania Python (Radio)
-        self.lbl_py_mode = QLabel()
-        self.lbl_py_mode.setStyleSheet("font-weight: bold;")
-        self.radio_console = QRadioButton()
-        self.radio_windowed = QRadioButton()
-        self.radio_console.setChecked(True)
-        
-        self.radio_group = QButtonGroup()
-        self.radio_group.addButton(self.radio_console)
-        self.radio_group.addButton(self.radio_windowed)
+        # Python Launch Mode Radiobuttons
+        self.lbl_python_mode = QLabel()
+        self.lbl_python_mode.setStyleSheet("font-weight: bold;")
+        main_layout.addWidget(self.lbl_python_mode)
 
         radio_layout = QHBoxLayout()
-        radio_layout.addWidget(self.radio_console)
-        radio_layout.addWidget(self.radio_windowed)
+        self.radio_group = QButtonGroup(central_widget)
+        self.console_radio = QRadioButton()
+        self.console_radio.setChecked(True)
+        self.windowed_radio = QRadioButton()
+        self.radio_group.addButton(self.console_radio, 0)
+        self.radio_group.addButton(self.windowed_radio, 1)
+        radio_layout.addWidget(self.console_radio)
+        radio_layout.addWidget(self.windowed_radio)
         radio_layout.addStretch()
-
-        main_layout.addWidget(self.lbl_py_mode)
         main_layout.addLayout(radio_layout)
 
-        # 3. Zarządzanie / Przeglądaj wpisy
+        # Manage Apps Button
         self.btn_manage = QPushButton()
-        self.btn_manage.setObjectName("primaryBtn")
-        self.btn_manage.clicked.connect(self.open_manage)
+        self.btn_manage.setObjectName("PrimaryButton")
+        self.btn_manage.clicked.connect(self.open_manage_window)
         main_layout.addWidget(self.btn_manage)
 
         main_layout.addSpacing(10)
 
-        # 4. Dolne przyciski akcji
-        action_layout = QHBoxLayout()
+        # Bottom Buttons
+        bottom_layout = QHBoxLayout()
         self.btn_submit = QPushButton()
-        self.btn_submit.setObjectName("primaryBtn")
+        self.btn_submit.setObjectName("PrimaryButton")
         self.btn_submit.clicked.connect(self.submit)
-        
         self.btn_cancel = QPushButton()
         self.btn_cancel.clicked.connect(self.cancel)
-        
         self.btn_exit = QPushButton()
         self.btn_exit.clicked.connect(self.close)
 
-        action_layout.addWidget(self.btn_submit)
-        action_layout.addWidget(self.btn_cancel)
-        action_layout.addStretch()
-        action_layout.addWidget(self.btn_exit)
-        main_layout.addLayout(action_layout)
+        bottom_layout.addWidget(self.btn_submit)
+        bottom_layout.addWidget(self.btn_cancel)
+        bottom_layout.addStretch()
+        bottom_layout.addWidget(self.btn_exit)
+        main_layout.addLayout(bottom_layout)
 
-        # Pasek statusu na dole
+        # Status Bar
         self.statusBar().showMessage("Ready")
 
-        self.update_texts()
+    def setup_style(self):
+        self.setStyleSheet("""
+            QMainWindow { background-color: #f3f4f6; }
+            QWidget#HeaderWidget { background-color: #0f4c81; border-radius: 4px; }
+            QLabel { font-family: 'Segoe UI'; font-size: 12px; color: #333333; }
+            QLineEdit { background-color: white; border: 1px solid #c8c8c8; border-radius: 4px; padding: 4px; font-size: 12px; }
+            QPushButton { font-family: 'Segoe UI'; font-size: 12px; font-weight: bold; background-color: #e1e3e6; border: none; border-radius: 4px; padding: 6px 12px; }
+            QPushButton:hover { background-color: #d9dde3; }
+            QPushButton:pressed { background-color: #cfd3d8; }
+            QPushButton#PrimaryButton { background-color: #0f4c81; color: white; }
+            QPushButton#PrimaryButton:hover { background-color: #0b4d84; }
+            QPushButton#PrimaryButton:pressed { background-color: #07315a; }
+            QRadioButton { font-family: 'Segoe UI'; font-size: 12px; }
+            QStatusBar { background-color: #e7ebf0; font-family: 'Segoe UI'; font-size: 11px; color: #4a4a4a; }
+        """)
 
-    def update_texts(self):
+    def switch_language(self):
+        global current_lang
+        current_lang = 'pl' if current_lang == 'en' else 'en'
+        self.statusBar().showMessage(f"Language changed to {current_lang.upper()}", 3000)
+        self.update_language()
+
+    def update_language(self):
         self.setWindowTitle(LANGUAGES[current_lang]['window_title'])
         self.btn_lang.setText("PL" if current_lang == "en" else "EN")
-        self.lbl_app.setText(f"{LANGUAGES[current_lang]['app_label']} '{LANGUAGES[current_lang]['submenu_name']}':")
+        self.lbl_label.setText(f"{LANGUAGES[current_lang]['app_label']} '{LANGUAGES[current_lang]['submenu_name']}':")
         self.lbl_path.setText(LANGUAGES[current_lang]['app_path_label'])
         self.lbl_icon.setText(LANGUAGES[current_lang]['app_icon_label'])
         self.btn_browse_path.setText(LANGUAGES[current_lang]['browse'])
         self.btn_browse_icon.setText(LANGUAGES[current_lang]['browse'])
-        self.lbl_py_mode.setText(LANGUAGES[current_lang]['python_launch_mode'])
-        self.radio_console.setText(LANGUAGES[current_lang]['python_launch_console'])
-        self.radio_windowed.setText(LANGUAGES[current_lang]['python_launch_windowed'])
+        self.lbl_python_mode.setText(LANGUAGES[current_lang]['python_launch_mode'])
+        self.console_radio.setText(LANGUAGES[current_lang]['python_launch_console'])
+        self.windowed_radio.setText(LANGUAGES[current_lang]['python_launch_windowed'])
         self.btn_manage.setText(LANGUAGES[current_lang]['manage_apps'])
         self.btn_submit.setText(LANGUAGES[current_lang]['submit'])
         self.btn_cancel.setText(LANGUAGES[current_lang]['cancel'])
         self.btn_exit.setText(LANGUAGES[current_lang]['exit'])
 
-    def switch_language(self):
-        global current_lang
-        current_lang = 'pl' if current_lang == 'en' else 'en'
-        self.statusBar().showMessage(f"Language changed to {current_lang.upper()}")
-        self.update_texts()
-
     def browse_app(self):
-        file_filter = f"{LANGUAGES[current_lang]['supported_files']};;{LANGUAGES[current_lang]['python_scripts']};;{LANGUAGES[current_lang]['exe_files']};;{LANGUAGES[current_lang]['all_files']}"
-        file_path, _ = QFileDialog.getOpenFileName(self, LANGUAGES[current_lang]['choose_app'], "", file_filter)
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, LANGUAGES[current_lang]['choose_app'], "", LANGUAGES[current_lang]['supported_files']
+        )
         if file_path:
-            self.entry_path.setText(file_path)
-            self.statusBar().showMessage(f"Selected: {os.path.basename(file_path)}")
+            self.entry_path.setText(os.path.normpath(file_path))
+            self.statusBar().showMessage(f"Selected app: {os.path.basename(file_path)}", 4000)
 
     def browse_icon(self):
-        file_filter = f"{LANGUAGES[current_lang]['icon_files']};;{LANGUAGES[current_lang]['all_files']}"
-        icon_path, _ = QFileDialog.getOpenFileName(self, LANGUAGES[current_lang]['choose_icon'], "", file_filter)
+        icon_path, _ = QFileDialog.getOpenFileName(
+            self, LANGUAGES[current_lang]['choose_icon'], "", LANGUAGES[current_lang]['icon_files']
+        )
         if icon_path:
-            self.entry_icon.setText(icon_path)
-            self.statusBar().showMessage(f"Selected icon: {os.path.basename(icon_path)}")
+            self.entry_icon.setText(os.path.normpath(icon_path))
+            self.statusBar().showMessage(f"Selected icon: {os.path.basename(icon_path)}", 4000)
 
     def submit(self):
         label = self.entry_label.text().strip()
@@ -642,53 +599,47 @@ class MainWindow(QMainWindow):
         icon_path = self.entry_icon.text().strip()
 
         if not label or not app_path:
-            QMessageBox.warning(self, "Warning", LANGUAGES[current_lang]['warning_fill'])
+            QMessageBox.warning(self, LANGUAGES[current_lang]['error_generic'], LANGUAGES[current_lang]['warning_fill'])
             return
 
-        python_mode = 'windowed' if self.radio_windowed.isChecked() else 'console'
-        res = add_to_context_menu(label, app_path, icon_path, python_mode=python_mode)
+        python_mode = 'windowed' if (app_path.lower().endswith('.py') and self.windowed_radio.isChecked()) else 'console'
 
-        if res is True:
+        result = add_to_context_menu(label, app_path, icon_path, python_mode=python_mode)
+        if result is True:
             QMessageBox.information(
                 self, 
                 LANGUAGES[current_lang]['success_add'], 
-                f"{LANGUAGES[current_lang]['success_add']} '{label}' -> {LANGUAGES[current_lang]['submenu_name']}"
+                f"{LANGUAGES[current_lang]['success_add']} '{label}' {LANGUAGES[current_lang]['submenu_name']}!"
             )
-            self.statusBar().showMessage(f"Added: {label}")
-        elif res == "perm":
-            QMessageBox.critical(self, "Error", LANGUAGES[current_lang]['error_perm'])
+            self.statusBar().showMessage(f"Added: {label}", 5000)
+        elif result == "perm_error":
+            QMessageBox.critical(self, LANGUAGES[current_lang]['error_generic'], LANGUAGES[current_lang]['error_perm'])
         else:
-            QMessageBox.critical(self, "Error", f"{LANGUAGES[current_lang]['error_generic']} {res}")
+            QMessageBox.critical(self, LANGUAGES[current_lang]['error_generic'], f"{LANGUAGES[current_lang]['error_generic']} {result}")
 
     def cancel(self):
         label = self.entry_label.text().strip()
         if not label:
-            QMessageBox.warning(self, "Warning", LANGUAGES[current_lang]['warning_remove_name'])
+            QMessageBox.warning(self, LANGUAGES[current_lang]['error_generic'], LANGUAGES[current_lang]['warning_remove_name'])
             return
 
-        res = remove_from_context_menu(label)
-        if res is True:
-            QMessageBox.information(self, "Success", f"{LANGUAGES[current_lang]['success_delete']} '{label}'")
-            self.statusBar().showMessage(f"Removed: {label}")
+        if remove_from_context_menu(label):
+            QMessageBox.information(self, LANGUAGES[current_lang]['success_add'], f"{LANGUAGES[current_lang]['success_delete']} '{label}'.")
+            self.statusBar().showMessage(f"Removed: {label}", 5000)
         else:
-            QMessageBox.critical(self, "Error", f"{LANGUAGES[current_lang]['error_generic']} {res}")
-
-    def open_manage(self):
-        dialog = ManageDialog(self)
-        dialog.exec_()
+            QMessageBox.warning(self, LANGUAGES[current_lang]['error_generic'], LANGUAGES[current_lang]['warning_not_found'])
 
     def show_about(self):
-        dialog = AboutDialog(self)
-        dialog.exec_()
+        dlg = AboutWindow(self)
+        dlg.exec_()
 
+    def open_manage_window(self):
+        dlg = ManageWindow(self)
+        dlg.exec_()
 
-# --- PUNKT WEJŚCIA (MAIN) ---
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setStyle('Fusion')  # Unifikacja wyglądu na każdym systemie
-    app.setStyleSheet(QSS_STYLE) # Wstrzyknięcie nowoczesnego stylu CSS
-    
-    window = MainWindow()
-    window.show()
+    gui = AppGui()
+    gui.show()
     sys.exit(app.exec_())
