@@ -1,5 +1,7 @@
 # Add To Context Menu v1.2 🛠️
 
+![Windows](https://img.shields.io/badge/OS-Windows-blue?logo=windows&logoColor=white)
+
 ![Zrzut ekranu aplikacji](screenshot.png)
 
 Add To Context Menu to proste narzędzie dla systemu Windows, które pozwala dodać pliki `.exe` oraz skrypty Python (`.py`) do menu kontekstowego pulpitu.

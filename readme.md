@@ -1,5 +1,7 @@
 # Add To Context Menu v1.2 🛠️
 
+![Windows](https://img.shields.io/badge/OS-Windows-blue?logo=windows&logoColor=white)
+
 ![Application screenshot](screenshot.png)
 
 Add To Context Menu is a lightweight Windows utility that lets you add `.exe` files and Python scripts (`.py`) directly to the desktop right-click menu.
